@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gacha"
+version = "0.1.0"
+description = "建立在 GGanalysis 之上的抽卡概率分析与决策工具（算得准 / 看得懂 / 比得了）"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    # 注：scipy 经由 GGanalysis 传递依赖引入，本项目代码不直接使用，故不在此声明。
+    "GGanalysis>=0.4.2",
+    "numpy>=2.0",
+    "matplotlib>=3.7",
+    "plotly>=5.20",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+gacha = "gacha.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

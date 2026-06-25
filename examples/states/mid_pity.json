@@ -1,0 +1,23 @@
+{
+  "description": "中间水位示例：角色垫 50 抽且处于大保底；武器垫 20 抽无定轨",
+  "game": "genshin",
+  "character": {
+    "pity": 50,
+    "guaranteed": true,
+    "radiance_losses": 1,
+    "cli": "gacha analyze --copies 1 --pity 50 --guaranteed --losses 1"
+  },
+  "weapon": {
+    "pity": 20,
+    "guaranteed": false,
+    "cli": "gacha analyze --banner weapon --copies 1 --pity 20"
+  },
+  "combine_01": {
+    "char_copies": 1,
+    "weap_copies": 1,
+    "char_pity": 50,
+    "char_guaranteed": true,
+    "weap_pity": 20,
+    "cli": "gacha combine --char-copies 1 --weap-copies 1 --char-pity 50 --char-guaranteed --weap-pity 20"
+  }
+}

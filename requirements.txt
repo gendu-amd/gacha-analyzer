@@ -1,0 +1,8 @@
+# Gacha 抽卡概率分析工具 —— 依赖锁定（M1）
+# 运行环境：Python 3.11（系统无 3.12；GGanalysis 需 >=3.9）
+GGanalysis==0.4.2
+numpy==2.4.6
+# scipy 由 GGanalysis 作为传递依赖自动安装（本项目代码零直接调用），不在此直接声明。
+matplotlib==3.11.0
+plotly==6.8.0
+pytest==9.1.1
