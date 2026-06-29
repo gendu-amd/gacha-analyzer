@@ -133,7 +133,11 @@ def plot_pmf_cdf(
 
 def plot_cost_grid(grid, out_path: str = "out/grid.png",
                    show_money: bool = True, title: str | None = None) -> str:
-    """命座×精炼 成本热力图：颜色=期望抽数，格内标注 抽数(/¥)。"""
+    """角色重复×武器重复 成本热力图：颜色=期望抽数，格内标注 抽数(/¥)。
+
+    标签按游戏切换（英文，避免无 CJK 字体环境下 PNG 乱码）：
+    原神=Constellation/Refinement、星铁=Eidolon/Superimposition、绝区零=Mindscape/Superimposition。
+    """
     d = figdata.grid_plot_data(grid)
     exp, money = d.exp, d.money
     rows = d.const_labels
@@ -147,8 +151,8 @@ def plot_cost_grid(grid, out_path: str = "out/grid.png",
 
     ax.set_xticks(range(len(cols)), labels=cols)
     ax.set_yticks(range(len(rows)), labels=rows)
-    ax.set_xlabel("Weapon refinement (R0 = no weapon)", color=theme.INK)
-    ax.set_ylabel("Constellation", color=theme.INK)
+    ax.set_xlabel(f"{d.refine_noun_en} ({d.refine_prefix}0 = no weapon)", color=theme.INK)
+    ax.set_ylabel(d.const_noun_en, color=theme.INK)
     ax.tick_params(length=0)
     for sp in ax.spines.values():
         sp.set_visible(False)
@@ -165,7 +169,8 @@ def plot_cost_grid(grid, out_path: str = "out/grid.png",
 
     cbar = fig.colorbar(im, ax=ax, shrink=0.85)
     cbar.set_label("Expected pulls", color=theme.INK)
-    ax.set_title(title or f"{grid.game_key}: cost grid (expected pulls / CNY)",
+    ax.set_title(title or f"{grid.game_key}: {d.const_noun_en}×{d.refine_noun_en} "
+                 f"cost grid (expected pulls / CNY)",
                  color=theme.INK, fontsize=13, fontweight="bold", loc="left", pad=10)
     _add_watermark(fig)
     fig.tight_layout()

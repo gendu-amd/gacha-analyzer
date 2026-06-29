@@ -1,7 +1,7 @@
 """交互式 HTML 报告（Plotly）.
 
 一份自包含、可交互、中文正常、双击即开的 HTML：汇总核心指标 + PMF/CDF 曲线 +
-预算把握表 +（可选）命座×精炼热力图 + 跨游戏比对。Plotly.js 内联，无需联网/服务器。
+预算把握表 +（可选）角色重复×武器重复热力图 + 跨游戏比对。Plotly.js 内联，无需联网/服务器。
 """
 
 from __future__ import annotations
@@ -32,10 +32,12 @@ def pmf_cdf_figure(dist, title: str, budget: int | None = None) -> go.Figure:
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08,
                         subplot_titles=("每抽达成概率 (PMF)", "累计达成概率 (CDF)"))
     fig.add_trace(go.Scatter(x=n, y=pmf, fill="tozeroy", mode="lines",
-                            line=dict(color=theme.BLUE, width=2), name="PMF",
+                            line=dict(color=theme.BLUE, width=2),
+                            fillcolor=theme.rgba(theme.BLUE, 0.10), name="PMF",
                             hovertemplate="第%{x}抽: %{y:.3%}<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=n, y=cdf, fill="tozeroy", mode="lines",
-                            line=dict(color=theme.BLUE, width=3), name="CDF",
+                            line=dict(color=theme.BLUE, width=3),
+                            fillcolor=theme.rgba(theme.BLUE, 0.08), name="CDF",
                             hovertemplate="%{x}抽以内: %{y:.1%}<extra></extra>"), row=2, col=1)
 
     fig.add_vline(x=exp, line=dict(color=theme.AMBER, dash="dash"), row=1, col=1,
@@ -76,8 +78,9 @@ def grid_figure(grid) -> go.Figure:
     layout = theme.plotly_layout_defaults()
     layout.update(height=480, margin=dict(l=60, r=30, t=70, b=50))
     fig.update_layout(
-        title=f"{d.game_name} 命座×精炼 成本网格（期望抽数/人民币）",
-        xaxis_title="武器精炼 (R0=不要武器)", yaxis_title="命座",
+        title=f"{d.game_name} {d.const_noun}×{d.refine_noun} 成本网格（期望抽数/人民币）",
+        xaxis_title=f"{d.refine_noun}（{d.refine_prefix}0=不要武器）",
+        yaxis_title=d.const_noun,
         yaxis=dict(autorange="reversed"),
         **layout,
     )
@@ -278,7 +281,9 @@ def generate_report(out_path, game, state, target, solver, budget=None,
                     + _fig_div(pmf_cdf_figure(cell_dist, f"{game.name} · {label}"))
                     + '</div>'
                 )
-        sections.append(("命座×精炼 成本网格", grid_html))
+        sections.append(
+            (f"{grid_mod.grid_terms(game.key).const_noun}×"
+             f"{grid_mod.grid_terms(game.key).refine_noun} 成本网格", grid_html))
 
     if include_compare:
         rows = compare_mod.compare_games(solver, banner=BANNER_CHARACTER)

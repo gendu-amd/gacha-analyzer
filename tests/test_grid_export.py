@@ -23,7 +23,7 @@ def test_parse_cell_code():
 
 def test_cell_label():
     assert grid.cell_label("genshin", 2, 1) == "C2R1"
-    assert grid.cell_label("hsr", 0, 1) == "E0R1"
+    assert grid.cell_label("hsr", 0, 1) == "E0S1"   # 星铁光锥=叠影(S)，非原神精炼(R)
 
 
 def test_cell_distribution_matches_grid():

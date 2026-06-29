@@ -251,7 +251,8 @@ def _cmd_grid(args) -> int:
     weap_state = PullState(item_pity=args.weap_pity, is_guaranteed=args.weap_guaranteed)
     g = grid_mod.cost_grid(SOLVER, game, char_state, weap_state,
                            max_const=args.max_const, max_refine=args.max_refine)
-    print(f"== {game.name} · 命座×精炼 成本网格（期望抽数 / 折人民币）==")
+    print(f"== {game.name} · {g.terms.const_noun}×{g.terms.refine_noun} "
+          f"成本网格（期望抽数 / 折人民币）==")
     print(f"角色起始：垫 {char_state.item_pity} 抽，"
           f"{'大保底' if char_state.is_guaranteed else '小保底'}"
           f" | 武器起始：垫 {weap_state.item_pity} 抽，"
@@ -300,7 +301,9 @@ def _cmd_grid(args) -> int:
     if args.plot:
         from gacha.viz.plots import plot_cost_grid
         path = plot_cost_grid(g, out_path=args.plot,
-                              title=f"{args.game}: cost grid (expected pulls / CNY)")
+                              title=f"{args.game}: {g.terms.const_noun_en}×"
+                                    f"{g.terms.refine_noun_en} cost grid "
+                                    f"(expected pulls / CNY)")
         print(f"\n[看得懂] 网格热力图已保存：{path}")
     return 0
 

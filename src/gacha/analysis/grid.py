@@ -12,25 +12,66 @@ from gacha.analysis import budget as budget_mod
 from gacha.analysis import combine, metrics
 from gacha.engine.base import BANNER_CHARACTER, BANNER_WEAPON, PullState, Target
 
-# 各游戏命座/魂/影位的称呼前缀
-CONST_PREFIX = {"genshin": "C", "hsr": "E", "zzz": "M"}
+
+@dataclass(frozen=True)
+class GridTerms:
+    """单个游戏「角色重复 × 武器重复」网格的术语（按游戏切换，避免写死原神黑话）.
+
+    Attributes:
+        const_noun: 角色重复维度的中文名（命座 / 星魂 / 影位）。
+        const_noun_en: 对应英文名（PNG 在无 CJK 字体环境下使用）。
+        const_prefix: 行标前缀（C / E / M）。
+        refine_noun: 武器重复维度的中文名（精炼 / 叠影）。
+        refine_noun_en: 对应英文名。
+        refine_prefix: 列标前缀（R / S）。
+    """
+
+    const_noun: str
+    const_noun_en: str
+    const_prefix: str
+    refine_noun: str
+    refine_noun_en: str
+    refine_prefix: str
+
+
+# 各游戏术语单一数据源：原神=命座/精炼、星铁=星魂/叠影、绝区零=影位/叠影。
+GRID_TERMS: dict[str, GridTerms] = {
+    "genshin": GridTerms("命座", "Constellation", "C", "精炼", "Refinement", "R"),
+    "hsr": GridTerms("星魂", "Eidolon", "E", "叠影", "Superimposition", "S"),
+    "zzz": GridTerms("影位", "Mindscape", "M", "叠影", "Superimposition", "S"),
+}
+DEFAULT_TERMS = GridTerms("命座", "Constellation", "C", "精炼", "Refinement", "R")
+
+
+def grid_terms(game_key: str) -> GridTerms:
+    """按游戏键取术语，未知游戏回退到原神口径。"""
+    return GRID_TERMS.get(game_key, DEFAULT_TERMS)
 
 
 @dataclass
 class CostGrid:
     game_key: str
     game_name: str
-    const_prefix: str
+    terms: GridTerms
     max_const: int
     max_refine: int
     exp_pulls: list[list[float]] = field(default_factory=list)
     money_cny: list[list[float]] = field(default_factory=list)
 
+    @property
+    def const_prefix(self) -> str:
+        return self.terms.const_prefix
+
+    @property
+    def refine_prefix(self) -> str:
+        return self.terms.refine_prefix
+
     def const_labels(self) -> list[str]:
-        return [f"{self.const_prefix}{c}" for c in range(self.max_const + 1)]
+        return [f"{self.terms.const_prefix}{c}" for c in range(self.max_const + 1)]
 
     def refine_labels(self) -> list[str]:
-        return ["R0"] + [f"R{r}" for r in range(1, self.max_refine + 1)]
+        p = self.terms.refine_prefix
+        return [f"{p}{r}" for r in range(self.max_refine + 1)]
 
 
 def cost_grid(
@@ -48,7 +89,7 @@ def cost_grid(
 
     grid = CostGrid(
         game_key=game.key, game_name=game.name,
-        const_prefix=CONST_PREFIX.get(game.key, "C"),
+        terms=grid_terms(game.key),
         max_const=max_const, max_refine=max_refine,
     )
     for c in range(max_const + 1):           # 命座 0..max_const → 角色拷贝 c+1
@@ -75,9 +116,9 @@ def parse_cell_code(code: str) -> tuple[int, int]:
 
 
 def cell_label(game_key: str, const: int, refine: int) -> str:
-    """单元格标签，如 genshin 的 (2,1) → ``C2R1``。"""
-    prefix = CONST_PREFIX.get(game_key, "C")
-    return f"{prefix}{const}R{refine}"
+    """单元格标签，如 genshin 的 (2,1) → ``C2R1``、hsr 的 (2,1) → ``E2S1``。"""
+    t = grid_terms(game_key)
+    return f"{t.const_prefix}{const}{t.refine_prefix}{refine}"
 
 
 def cell_distribution(

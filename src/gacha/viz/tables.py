@@ -58,9 +58,9 @@ def format_compare_table(rows: list[ComparisonRow]) -> str:
 
 
 def format_grid_table(grid: CostGrid) -> str:
-    """命座×精炼成本网格 → 对齐文本表。"""
+    """角色重复×武器重复成本网格 → 对齐文本表（术语随游戏切换）。"""
     cols = grid.refine_labels()
-    corner = "命座\\精炼"
+    corner = f"{grid.terms.const_noun}\\{grid.terms.refine_noun}"
     col_w = 16
     header_cells = [corner] + cols
     widths = [10] + [col_w] * len(cols)

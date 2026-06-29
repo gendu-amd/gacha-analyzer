@@ -63,7 +63,7 @@ def dist_plot_data(
 
 @dataclass(frozen=True)
 class GridPlotData:
-    """命座×精炼成本网格的绘图数据：期望抽数/人民币矩阵 + 行列标签。"""
+    """角色重复×武器重复成本网格的绘图数据：期望抽数/人民币矩阵 + 行列标签 + 术语。"""
 
     exp: np.ndarray  # shape (n_const, n_refine)
     money: np.ndarray
@@ -71,6 +71,11 @@ class GridPlotData:
     refine_labels: list[str]
     game_key: str
     game_name: str
+    const_noun: str
+    const_noun_en: str
+    refine_noun: str
+    refine_noun_en: str
+    refine_prefix: str
 
     @property
     def vmax(self) -> float:
@@ -78,7 +83,8 @@ class GridPlotData:
 
 
 def grid_plot_data(grid) -> GridPlotData:
-    """从 ``CostGrid`` 提取绘图所需的矩阵与标签（PNG/HTML 共用）。"""
+    """从 ``CostGrid`` 提取绘图所需的矩阵、标签与术语（PNG/HTML 共用）。"""
+    t = grid.terms
     return GridPlotData(
         exp=np.array(grid.exp_pulls),
         money=np.array(grid.money_cny),
@@ -86,6 +92,11 @@ def grid_plot_data(grid) -> GridPlotData:
         refine_labels=grid.refine_labels(),
         game_key=grid.game_key,
         game_name=grid.game_name,
+        const_noun=t.const_noun,
+        const_noun_en=t.const_noun_en,
+        refine_noun=t.refine_noun,
+        refine_noun_en=t.refine_noun_en,
+        refine_prefix=t.refine_prefix,
     )
 
 

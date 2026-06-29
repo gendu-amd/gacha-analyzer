@@ -11,23 +11,23 @@ import tempfile
 # Ensure matplotlib cache is writable before any mpl import elsewhere.
 os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "gacha-mpl"))
 
-# ---- Palette ----
-BLUE = "#3D6FE5"
-BLUE_FILL = "#9DBBF6"
-BLUE_LIGHT = "#E8EEFB"
-GREEN = "#1F9E78"
-GREEN_FILL = "#A0E0C8"
-AMBER = "#E8A317"
-RED = "#E4572E"
-PURPLE = "#8E5BD6"
-INK = "#1F2937"
-MUTED = "#6B7280"
-BORDER = "#D0D7DE"
-GRID = "#E6EAF0"
-BG_PAGE = "#F4F6FA"
-BG_CARD = "#FBFCFE"
-BG_ACCENT = "#F8FAFF"
-WATERMARK = "#B6BECC"
+# ---- Palette (professional analytics SaaS, 七麦/Qimai-inspired: calm, coherent) ----
+BLUE = "#2E5BFF"
+BLUE_FILL = "#C7D7FB"
+BLUE_LIGHT = "#EAF0FE"
+GREEN = "#16B286"
+GREEN_FILL = "#B7E7D6"
+AMBER = "#F2A341"
+RED = "#E5484D"
+PURPLE = "#7A5AF0"
+INK = "#1A2333"
+MUTED = "#6B7686"
+BORDER = "#E5E8EF"
+GRID = "#EDF0F5"
+BG_PAGE = "#F5F7FB"
+BG_CARD = "#FFFFFF"
+BG_ACCENT = "#F5F8FE"
+WATERMARK = "#AEB6C4"
 
 # Per-game series colors (cross-game charts)
 GAME_COLORS = {
@@ -38,11 +38,15 @@ GAME_COLORS = {
 GAME_COLOR_LIST = [BLUE, GREEN, PURPLE, AMBER, RED]
 
 # Heatmap — single source of truth shared by matplotlib (PNG) and Plotly (HTML).
-# Low cost = calm blue, mid = amber, high = red. Same identity across both renderers.
-HEATMAP_ANCHORS = (BLUE_LIGHT, AMBER, RED)
-HEATMAP_SCALE_PLOTLY = [[0.0, BLUE_LIGHT], [0.5, AMBER], [1.0, RED]]
+# Smooth WARM sequential ramp (cream → amber → red): higher cost = hotter.
+# A single warm hue family avoids the cool→warm "断层" (banding) of a blue start.
+HEATMAP_ANCHORS = ("#FCF7EE", "#F7D58A", "#F0A24E", "#E06A3D", "#D5452E")
+HEATMAP_SCALE_PLOTLY = [
+    [0.0, "#FCF7EE"], [0.25, "#F7D58A"], [0.5, "#F0A24E"],
+    [0.75, "#E06A3D"], [1.0, "#D5452E"],
+]
 # Above this fraction of the max value, cells are dark enough to need white text.
-HEATMAP_WHITE_TEXT_THRESHOLD = 0.78
+HEATMAP_WHITE_TEXT_THRESHOLD = 0.62
 
 # Typography
 FONT_SANS = (
@@ -122,6 +126,13 @@ def plotly_template() -> dict:
 
 def game_color(game_key: str, index: int = 0) -> str:
     return GAME_COLORS.get(game_key, GAME_COLOR_LIST[index % len(GAME_COLOR_LIST)])
+
+
+def rgba(hex_color: str, alpha: float) -> str:
+    """Convert ``#RRGGBB`` to a Plotly/CSS ``rgba(r,g,b,a)`` string for light fills."""
+    h = hex_color.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({r},{g},{b},{alpha})"
 
 
 def heatmap_cmap():
