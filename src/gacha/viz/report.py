@@ -9,7 +9,6 @@ from __future__ import annotations
 import html
 import os
 
-import numpy as np
 import plotly.graph_objects as go
 from plotly.offline import get_plotlyjs
 from plotly.subplots import make_subplots
@@ -59,15 +58,15 @@ def pmf_cdf_figure(dist, title: str, budget: int | None = None) -> go.Figure:
     return _apply_plotly(fig, height=620).update_layout(title=dict(text=title, x=0))
 
 
-def grid_figure(grid, cell_pmfs: dict[str, go.Figure] | None = None) -> go.Figure:
-    z = np.array(grid.exp_pulls)
-    money = np.array(grid.money_cny)
+def grid_figure(grid) -> go.Figure:
+    d = figdata.grid_plot_data(grid)
+    z, money = d.exp, d.money
     text = [[f"{z[i, j]:.0f}抽<br>¥{money[i, j]:.0f}" for j in range(z.shape[1])]
             for i in range(z.shape[0])]
-    custom = [[f"{grid.const_labels()[i]}_{grid.refine_labels()[j]}"
+    custom = [[f"{d.const_labels[i]}_{d.refine_labels[j]}"
                for j in range(z.shape[1])] for i in range(z.shape[0])]
     fig = go.Figure(go.Heatmap(
-        z=z, x=grid.refine_labels(), y=grid.const_labels(),
+        z=z, x=d.refine_labels, y=d.const_labels,
         text=text, texttemplate="%{text}", textfont=dict(size=11),
         customdata=custom,
         colorscale=theme.HEATMAP_SCALE_PLOTLY,
@@ -77,7 +76,7 @@ def grid_figure(grid, cell_pmfs: dict[str, go.Figure] | None = None) -> go.Figur
     layout = theme.plotly_layout_defaults()
     layout.update(height=480, margin=dict(l=60, r=30, t=70, b=50))
     fig.update_layout(
-        title=f"{grid.game_name} 命座×精炼 成本网格（期望抽数/人民币）",
+        title=f"{d.game_name} 命座×精炼 成本网格（期望抽数/人民币）",
         xaxis_title="武器精炼 (R0=不要武器)", yaxis_title="命座",
         yaxis=dict(autorange="reversed"),
         **layout,
@@ -86,25 +85,25 @@ def grid_figure(grid, cell_pmfs: dict[str, go.Figure] | None = None) -> go.Figur
 
 
 def comparison_figure(rows) -> go.Figure:
-    from gacha.analysis.compare import shared_money_per_pull_cny
-
-    labels = [r.game_name for r in rows]
-    shared_cny = shared_money_per_pull_cny(rows)
-    colors = [theme.game_color(r.game_key, i) for i, r in enumerate(rows)]
+    d = figdata.comparison_data(rows)
+    labels = d.game_names
+    shared_cny = d.shared_cny
+    colors = d.colors
     fig = make_subplots(rows=1, cols=2, horizontal_spacing=0.12,
                        subplot_titles=("每限定期望抽数（越低越划算）",
                                        "每月白嫖可得限定数（越高越慷慨）"))
     if shared_cny is not None:
-        bar_text = [f"{r.exp_pulls:.0f}抽" for r in rows]
+        bar_text = [f"{e:.0f}抽" for e in d.exp_pulls]
         subtitle = f"折人民币统一 ¥{shared_cny:.0f}/抽"
     else:
-        bar_text = [f"{r.exp_pulls:.0f}抽<br>¥{r.exp_money_cny:.0f}" for r in rows]
+        bar_text = [f"{e:.0f}抽<br>¥{m:.0f}"
+                    for e, m in zip(d.exp_pulls, d.exp_money_cny)]
         subtitle = None
-    fig.add_trace(go.Bar(x=labels, y=[r.exp_pulls for r in rows], marker_color=colors,
+    fig.add_trace(go.Bar(x=labels, y=d.exp_pulls, marker_color=colors,
                         text=bar_text, textposition="outside"), row=1, col=1)
-    fig.add_trace(go.Bar(x=labels, y=[r.free_featured_per_month for r in rows],
+    fig.add_trace(go.Bar(x=labels, y=d.free_featured_per_month,
                         marker_color=theme.GREEN_FILL,
-                        text=[f"{r.free_featured_per_month:.2f}" for r in rows],
+                        text=[f"{f:.2f}" for f in d.free_featured_per_month],
                         textposition="outside"), row=1, col=2)
     title = "跨游戏比对（抽 1 个限定，从零）"
     if subtitle:
@@ -114,35 +113,26 @@ def comparison_figure(rows) -> go.Figure:
 
 def combine_comparison_figure(rows) -> go.Figure:
     """跨游戏组合目标：叠加 CDF + 期望柱状图。"""
-    from gacha.analysis.compare import CombineComparisonRow
-
-    rows = [r for r in rows if isinstance(r, CombineComparisonRow) and r.dist is not None]
+    d = figdata.combine_cdf_data(rows)
     fig = make_subplots(rows=1, cols=2, horizontal_spacing=0.10,
                        subplot_titles=("联合目标 CDF 叠加", "期望抽数对比"))
-    max_x = 0
-    for i, r in enumerate(rows):
-        dist = r.dist
-        assert dist is not None
-        cap = figdata.plot_range(dist)
-        n = np.arange(cap)
-        cdf = np.cumsum(dist.pmf[:cap])
-        color = theme.game_color(r.game_key, i)
+    for s in d.series:
         fig.add_trace(go.Scatter(
-            x=n, y=cdf, mode="lines", name=r.game_name,
-            line=dict(color=color, width=2.5),
-            hovertemplate=f"{r.game_name}<br>%{{x}}抽: %{{y:.1%}}<extra></extra>",
+            x=s.n, y=s.cdf, mode="lines", name=s.game_name,
+            line=dict(color=s.color, width=2.5),
+            hovertemplate=f"{s.game_name}<br>%{{x}}抽: %{{y:.1%}}<extra></extra>",
         ), row=1, col=1)
-        max_x = max(max_x, cap - 1)
+    max_x = d.max_x
 
-    labels = [r.game_name for r in rows]
-    colors = [theme.game_color(r.game_key, i) for i, r in enumerate(rows)]
+    labels = [s.game_name for s in d.series]
+    colors = [s.color for s in d.series]
     fig.add_trace(go.Bar(
-        x=labels, y=[r.exp_pulls for r in rows], marker_color=colors,
-        text=[f"{r.exp_pulls:.0f}抽" for r in rows], textposition="outside",
+        x=labels, y=[s.exp_pulls for s in d.series], marker_color=colors,
+        text=[f"{s.exp_pulls:.0f}抽" for s in d.series], textposition="outside",
     ), row=1, col=2)
     fig.update_xaxes(range=[0, max_x], row=1, col=1)
     fig.update_yaxes(tickformat=".0%", range=[0, 1.02], row=1, col=1)
-    char_n, weap_n = rows[0].char_copies, rows[0].weap_copies
+    char_n, weap_n = d.char_copies, d.weap_copies
     title = f"跨游戏组合比对（{char_n} 角色 + {weap_n} 武器拷贝）"
     return _apply_plotly(fig, height=460).update_layout(
         title=dict(text=title, x=0), showlegend=True,

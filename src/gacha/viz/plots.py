@@ -9,7 +9,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.ticker import PercentFormatter  # noqa: E402
-import numpy as np  # noqa: E402
 
 from gacha.analysis import metrics  # noqa: E402
 from gacha.engine.base import PullDistribution  # noqa: E402
@@ -135,10 +134,10 @@ def plot_pmf_cdf(
 def plot_cost_grid(grid, out_path: str = "out/grid.png",
                    show_money: bool = True, title: str | None = None) -> str:
     """命座×精炼 成本热力图：颜色=期望抽数，格内标注 抽数(/¥)。"""
-    exp = np.array(grid.exp_pulls)
-    money = np.array(grid.money_cny)
-    rows = grid.const_labels()
-    cols = grid.refine_labels()
+    d = figdata.grid_plot_data(grid)
+    exp, money = d.exp, d.money
+    rows = d.const_labels
+    cols = d.refine_labels
 
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     h = 0.7 * len(rows) + 1.8
@@ -154,7 +153,7 @@ def plot_cost_grid(grid, out_path: str = "out/grid.png",
     for sp in ax.spines.values():
         sp.set_visible(False)
 
-    vmax = exp.max()
+    vmax = d.vmax
     for i in range(len(rows)):
         for j in range(len(cols)):
             txt = f"{exp[i, j]:.0f}"
@@ -178,19 +177,18 @@ def plot_cost_grid(grid, out_path: str = "out/grid.png",
 def plot_comparison(rows, out_path: str = "out/compare.png",
                     title: str = "Cross-game comparison (per featured 5-star)") -> str:
     """跨游戏比对：左轴期望抽数（越低越划算），右图每月白嫖可得限定数。"""
-    from gacha.analysis.compare import shared_money_per_pull_cny
-
-    labels = [f"{r.game_key}" for r in rows]
-    exp = [r.exp_pulls for r in rows]
-    free = [r.free_featured_per_month for r in rows]
-    shared_cny = shared_money_per_pull_cny(rows)
-    colors = [theme.game_color(r.game_key, i) for i, r in enumerate(rows)]
+    d = figdata.comparison_data(rows)
+    labels = d.game_keys
+    exp = d.exp_pulls
+    free = d.free_featured_per_month
+    shared_cny = d.shared_cny
+    colors = d.colors
 
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
     bars = ax1.bar(labels, exp, color=colors, edgecolor=theme.INK, width=0.6, alpha=0.85)
-    for b, e, r in zip(bars, exp, rows):
+    for b, e, r in zip(bars, exp, d.rows):
         if shared_cny is not None:
             ann = f"{e:.0f} pulls"
         else:
@@ -230,31 +228,19 @@ def plot_compare_combine_cdf(
     title: str | None = None,
 ) -> str:
     """跨游戏组合目标：叠加 CDF 对比 + 期望抽数柱状图。"""
-    from gacha.analysis.compare import CombineComparisonRow, shared_money_per_pull_cny
-
-    rows = [r for r in rows if isinstance(r, CombineComparisonRow) and r.dist is not None]
-    if not rows:
-        raise ValueError("需要至少一行带 dist 的 CombineComparisonRow")
-
-    shared_cny = shared_money_per_pull_cny(rows)
-    char_n, weap_n = rows[0].char_copies, rows[0].weap_copies
+    d = figdata.combine_cdf_data(rows)
+    shared_cny = d.shared_cny
+    char_n, weap_n = d.char_copies, d.weap_copies
     if title is None:
         title = f"Cross-game combine: {char_n} char + {weap_n} weapon copies"
 
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     fig, (ax_cdf, ax_bar) = plt.subplots(1, 2, figsize=(13, 5.5))
 
-    max_x = 0
-    for i, r in enumerate(rows):
-        dist = r.dist
-        assert dist is not None
-        cap = figdata.plot_range(dist)
-        n = np.arange(cap)
-        cdf = np.cumsum(dist.pmf[:cap])
-        color = theme.game_color(r.game_key, i)
-        label = r.game_key + ("*" if r.char_only else "")
-        ax_cdf.plot(n, cdf, color=color, lw=2.2, label=label)
-        max_x = max(max_x, cap - 1)
+    for s in d.series:
+        label = s.game_key + ("*" if s.char_only else "")
+        ax_cdf.plot(s.n, s.cdf, color=s.color, lw=2.2, label=label)
+    max_x = d.max_x
 
     ax_cdf.axhline(0.5, color="#C5CCD6", ls=":", lw=1.0)
     ax_cdf.axhline(0.9, color="#C5CCD6", ls=":", lw=1.0)
@@ -267,16 +253,16 @@ def plot_compare_combine_cdf(
     ax_cdf.legend(loc="lower right", frameon=True, fontsize=9)
     _style_axes(ax_cdf)
 
-    labels = [r.game_key for r in rows]
-    exp = [r.exp_pulls for r in rows]
-    colors = [theme.game_color(r.game_key, i) for i, r in enumerate(rows)]
+    labels = [s.game_key for s in d.series]
+    exp = [s.exp_pulls for s in d.series]
+    colors = [s.color for s in d.series]
     bars = ax_bar.bar(labels, exp, color=colors, edgecolor=theme.INK, width=0.55, alpha=0.85)
-    for b, r in zip(bars, rows):
+    for b, s in zip(bars, d.series):
         if shared_cny is not None:
-            ann = f"{r.exp_pulls:.0f}"
+            ann = f"{s.exp_pulls:.0f}"
         else:
-            ann = f"{r.exp_pulls:.0f}\n¥{r.exp_money_cny:.0f}"
-        ax_bar.annotate(ann, (b.get_x() + b.get_width() / 2, r.exp_pulls),
+            ann = f"{s.exp_pulls:.0f}\n¥{s.exp_money_cny:.0f}"
+        ax_bar.annotate(ann, (b.get_x() + b.get_width() / 2, s.exp_pulls),
                         ha="center", va="bottom", fontsize=9, color=theme.INK)
     ax_bar.set_title("Expected pulls (lower = cheaper)", fontsize=11, color=theme.INK, loc="left")
     ax_bar.set_ylabel("Expected pulls")
@@ -284,7 +270,7 @@ def plot_compare_combine_cdf(
     _style_axes(ax_bar)
 
     fig.suptitle(title, fontsize=13, fontweight="bold", color=theme.INK, x=0.02, ha="left")
-    if any(r.char_only for r in rows):
+    if any(s.char_only for s in d.series):
         fig.text(0.02, 0.01, "* = weapon pool unavailable, character-only",
                  fontsize=8, color=theme.MUTED)
     _add_watermark(fig)
