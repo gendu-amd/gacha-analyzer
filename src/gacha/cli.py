@@ -275,7 +275,9 @@ def _cmd_grid(args) -> int:
         for code in cells:
             const, refine = grid_mod.parse_cell_code(code)
             if const > args.max_const or refine > args.max_refine:
-                print(f"  跳过 {code}：超出网格范围 C0..C{args.max_const} R0..R{args.max_refine}")
+                print(f"  跳过 {code}：超出网格范围 "
+                      f"{g.const_prefix}0..{g.const_prefix}{args.max_const} "
+                      f"{g.refine_prefix}0..{g.refine_prefix}{args.max_refine}")
                 continue
             dist = grid_mod.cell_distribution(SOLVER, game, const, refine,
                                               char_state, weap_state)
@@ -283,7 +285,7 @@ def _cmd_grid(args) -> int:
             fname = f"{game.key}_{label}.png"
             out_path = os.path.join(out_dir, fname)
             s = metrics.summary(dist)
-            subtitle = f"constellation × refinement cell {label}"
+            subtitle = f"{g.terms.const_noun_en} × {g.terms.refine_noun_en} cell {label}"
             from gacha.viz import theme
             if theme.pick_matplotlib_cjk_font():
                 title = f"{game.name} · {label}"
