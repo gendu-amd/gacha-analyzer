@@ -82,6 +82,7 @@ def plot_pmf_cdf(
         ax1.axvline(p50, color=theme.GREEN, ls=":", lw=1.8)
         _tick_label(ax1, p50, "P50", theme.GREEN)
     # Headline numbers live in one compact caption (single source, no line-label dup).
+    # Two-space gaps are intentional visual padding to loosely align the value column.
     _stat_caption(ax1, [
         (f"mean  {exp:.0f}", theme.AMBER),
         (f"P50   {p50}", theme.GREEN),

@@ -14,7 +14,7 @@ def display_width(text: str) -> int:
     w = wcswidth(text)
     if w >= 0:
         return w
-    # wcswidth 遇到控制字符会返回 -1；按字符累加并把不可打印字符当作 0 宽。
+    # wcswidth 对控制字符返回 -1：退回逐字符累加，把不可打印字符当作 0 宽。
     return sum(max(_wcwidth(ch), 0) for ch in text)
 
 
