@@ -129,7 +129,7 @@ def plot_cost_grid(grid, out_path: str = "out/grid.png",
             if show_money:
                 txt += f"\n¥{money[i, j]:.0f}"
             # White text only on the darkest (red) cells; ink elsewhere for contrast.
-            color = "white" if exp[i, j] > 0.78 * vmax else theme.INK
+            color = "white" if exp[i, j] > theme.HEATMAP_WHITE_TEXT_THRESHOLD * vmax else theme.INK
             ax.text(j, i, txt, ha="center", va="center", fontsize=8.5, color=color)
 
     cbar = fig.colorbar(im, ax=ax, shrink=0.85)

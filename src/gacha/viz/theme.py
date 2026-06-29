@@ -41,6 +41,8 @@ GAME_COLOR_LIST = [BLUE, GREEN, PURPLE, AMBER, RED]
 # Low cost = calm blue, mid = amber, high = red. Same identity across both renderers.
 HEATMAP_ANCHORS = (BLUE_LIGHT, AMBER, RED)
 HEATMAP_SCALE_PLOTLY = [[0.0, BLUE_LIGHT], [0.5, AMBER], [1.0, RED]]
+# Above this fraction of the max value, cells are dark enough to need white text.
+HEATMAP_WHITE_TEXT_THRESHOLD = 0.78
 
 # Typography
 FONT_SANS = (
