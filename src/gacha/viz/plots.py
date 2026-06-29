@@ -13,7 +13,7 @@ import numpy as np  # noqa: E402
 
 from gacha.analysis import metrics  # noqa: E402
 from gacha.engine.base import PullDistribution  # noqa: E402
-from gacha.viz import theme  # noqa: E402
+from gacha.viz import figdata, theme  # noqa: E402
 
 theme.apply_matplotlib_theme()
 
@@ -46,16 +46,10 @@ def plot_pmf_cdf(
     subtitle: str | None = None,
 ) -> str:
     """绘制 PMF + CDF 双子图并保存为 PNG，返回保存路径。"""
-    pmf = dist.pmf
-    if max_pulls is not None:
-        pmf = pmf[: max_pulls + 1]
-    n = np.arange(len(pmf))
-    c = np.cumsum(pmf)
-
-    p50 = metrics.quantile(dist, 0.5)
-    p90 = metrics.quantile(dist, 0.9)
-    exp = metrics.expectation(dist)
-    ymax = float(pmf.max()) if len(pmf) else 1.0
+    d = figdata.dist_plot_data(dist, max_pulls=max_pulls, pad=0)
+    n, pmf, c = d.n, d.pmf, d.cdf
+    p50, p90, exp = d.p50, d.p90, d.exp
+    ymax = d.ymax
 
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     fig, (ax1, ax2) = plt.subplots(
@@ -118,7 +112,7 @@ def plot_cost_grid(grid, out_path: str = "out/grid.png",
     h = 0.7 * len(rows) + 1.8
     w = 1.5 * len(cols) + 1.5
     fig, ax = plt.subplots(figsize=(w, h))
-    im = ax.imshow(exp, cmap=theme.HEATMAP_SCALE, aspect="auto")
+    im = ax.imshow(exp, cmap=theme.heatmap_cmap(), aspect="auto")
 
     ax.set_xticks(range(len(cols)), labels=cols)
     ax.set_yticks(range(len(rows)), labels=rows)
@@ -134,7 +128,8 @@ def plot_cost_grid(grid, out_path: str = "out/grid.png",
             txt = f"{exp[i, j]:.0f}"
             if show_money:
                 txt += f"\n¥{money[i, j]:.0f}"
-            color = "white" if exp[i, j] > 0.6 * vmax else theme.INK
+            # White text only on the darkest (red) cells; ink elsewhere for contrast.
+            color = "white" if exp[i, j] > 0.78 * vmax else theme.INK
             ax.text(j, i, txt, ha="center", va="center", fontsize=8.5, color=color)
 
     cbar = fig.colorbar(im, ax=ax, shrink=0.85)
@@ -222,8 +217,7 @@ def plot_compare_combine_cdf(
     for i, r in enumerate(rows):
         dist = r.dist
         assert dist is not None
-        p99 = metrics.quantile(dist, 0.99)
-        cap = min(len(dist.pmf), (p99 if p99 > 0 else len(dist.pmf)) + 20)
+        cap = figdata.plot_range(dist)
         n = np.arange(cap)
         cdf = np.cumsum(dist.pmf[:cap])
         color = theme.game_color(r.game_key, i)

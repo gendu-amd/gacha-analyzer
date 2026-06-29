@@ -17,7 +17,7 @@ from plotly.subplots import make_subplots
 from gacha.analysis import budget as budget_mod
 from gacha.analysis import metrics
 from gacha.engine.base import BANNER_CHARACTER, BANNER_WEAPON
-from gacha.viz import theme
+from gacha.viz import figdata, theme
 
 
 def _apply_plotly(fig: go.Figure, height: int = 620) -> go.Figure:
@@ -25,19 +25,10 @@ def _apply_plotly(fig: go.Figure, height: int = 620) -> go.Figure:
     return fig
 
 
-def _plot_range(dist) -> int:
-    p99 = metrics.quantile(dist, 0.99)
-    return min(dist.max_pulls, (p99 if p99 > 0 else dist.max_pulls) + 20)
-
-
 def pmf_cdf_figure(dist, title: str, budget: int | None = None) -> go.Figure:
-    cap = _plot_range(dist)
-    pmf = dist.pmf[: cap + 1]
-    n = np.arange(len(pmf))
-    cdf = np.cumsum(pmf)
-    exp = metrics.expectation(dist)
-    p50 = metrics.quantile(dist, 0.5)
-    p90 = metrics.quantile(dist, 0.9)
+    d = figdata.dist_plot_data(dist)
+    n, pmf, cdf = d.n, d.pmf, d.cdf
+    cap, exp, p50, p90 = d.cap, d.exp, d.p50, d.p90
 
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08,
                         subplot_titles=("每抽达成概率 (PMF)", "累计达成概率 (CDF)"))
@@ -79,7 +70,7 @@ def grid_figure(grid, cell_pmfs: dict[str, go.Figure] | None = None) -> go.Figur
         z=z, x=grid.refine_labels(), y=grid.const_labels(),
         text=text, texttemplate="%{text}", textfont=dict(size=11),
         customdata=custom,
-        colorscale=[[0, theme.BLUE_LIGHT], [0.5, theme.AMBER], [1, theme.RED]],
+        colorscale=theme.HEATMAP_SCALE_PLOTLY,
         colorbar=dict(title="期望抽数", thickness=14),
         hovertemplate="%{y} · %{x}<br>期望 %{z:.0f} 抽<extra></extra>",
     ))
@@ -132,8 +123,7 @@ def combine_comparison_figure(rows) -> go.Figure:
     for i, r in enumerate(rows):
         dist = r.dist
         assert dist is not None
-        p99 = metrics.quantile(dist, 0.99)
-        cap = min(len(dist.pmf), (p99 if p99 > 0 else len(dist.pmf)) + 20)
+        cap = figdata.plot_range(dist)
         n = np.arange(cap)
         cdf = np.cumsum(dist.pmf[:cap])
         color = theme.game_color(r.game_key, i)

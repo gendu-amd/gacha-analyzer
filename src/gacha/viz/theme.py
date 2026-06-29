@@ -37,8 +37,10 @@ GAME_COLORS = {
 }
 GAME_COLOR_LIST = [BLUE, GREEN, PURPLE, AMBER, RED]
 
-# Heatmap
-HEATMAP_SCALE = "YlOrRd"
+# Heatmap — single source of truth shared by matplotlib (PNG) and Plotly (HTML).
+# Low cost = calm blue, mid = amber, high = red. Same identity across both renderers.
+HEATMAP_ANCHORS = (BLUE_LIGHT, AMBER, RED)
+HEATMAP_SCALE_PLOTLY = [[0.0, BLUE_LIGHT], [0.5, AMBER], [1.0, RED]]
 
 # Typography
 FONT_SANS = (
@@ -118,6 +120,12 @@ def plotly_template() -> dict:
 
 def game_color(game_key: str, index: int = 0) -> str:
     return GAME_COLORS.get(game_key, GAME_COLOR_LIST[index % len(GAME_COLOR_LIST)])
+
+
+def heatmap_cmap():
+    """Matplotlib colormap matching the Plotly heatmap scale (shared identity)."""
+    from matplotlib.colors import LinearSegmentedColormap
+    return LinearSegmentedColormap.from_list("gacha_heat", list(HEATMAP_ANCHORS))
 
 
 def watermark_text() -> str:
