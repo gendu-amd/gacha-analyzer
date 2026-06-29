@@ -110,9 +110,7 @@ def _cmd_analyze(args) -> int:
         title = (f"{args.game.capitalize()} · {args.banner} banner"
                  f"  |  target: {target.copies}x UP {banner.top_rarity_label}")
         subtitle = (f"start: pity {state.item_pity}, "
-                    f"{'guaranteed' if state.is_guaranteed else '50/50'}"
-                    f"   mean {s['expectation']:.0f} pulls"
-                    f"   (P50 {s['p50']} / P90 {s['p90']} / P99 {s['p99']})")
+                    f"{'guaranteed' if state.is_guaranteed else '50/50'}")
         path = plot_pmf_cdf(dist, title=title, subtitle=subtitle, out_path=args.plot,
                             max_pulls=min(cap + 20, dist.max_pulls), budget=args.budget)
         print(f"\n[看得懂] 图已保存：{path}")
@@ -284,8 +282,7 @@ def _cmd_grid(args) -> int:
             fname = f"{game.key}_{label}.png"
             out_path = os.path.join(out_dir, fname)
             s = metrics.summary(dist)
-            subtitle = (f"{label}  |  mean {s['expectation']:.0f} pulls"
-                        f"  P50 {s['p50']}  P90 {s['p90']}")
+            subtitle = f"constellation × refinement cell {label}"
             from gacha.viz import theme
             if theme.pick_matplotlib_cjk_font():
                 title = f"{game.name} · {label}"

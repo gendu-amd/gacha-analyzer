@@ -25,11 +25,26 @@ def _style_axes(ax) -> None:
     ax.grid(axis="x", visible=False)
 
 
-def _annotate(ax, x, text, color, y, va="bottom"):
+def _tick_label(ax, x, text, color):
+    """Short categorical marker label pinned just above the axis top (declutter)."""
     ax.annotate(
-        text, xy=(x, y), xytext=(4, 0), textcoords="offset points",
-        color=color, fontsize=8.5, fontweight="bold", va=va, ha="left",
+        text, xy=(x, 1.0), xycoords=("data", "axes fraction"),
+        xytext=(0, 3), textcoords="offset points",
+        color=color, fontsize=8.5, fontweight="bold", va="bottom", ha="center",
     )
+
+
+def _stat_caption(ax, lines: list[tuple[str, str]]) -> None:
+    """Compact top-right caption box: the single source for the headline numbers.
+
+    `lines` is a list of (text, color); the vertical guide lines stay label-light
+    so each number appears exactly once.
+    """
+    y = 0.95
+    for text, color in lines:
+        ax.text(0.985, y, text, transform=ax.transAxes, ha="right", va="top",
+                fontsize=9, fontweight="bold", color=color)
+        y -= 0.11
 
 
 def _add_watermark(fig) -> None:
@@ -53,44 +68,60 @@ def plot_pmf_cdf(
 
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=(11, 7.2), sharex=True,
-        gridspec_kw={"height_ratios": [1.15, 1], "hspace": 0.12},
+        2, 1, figsize=(11, 7.4), sharex=True,
+        gridspec_kw={"height_ratios": [1.15, 1], "hspace": 0.16},
     )
 
+    # ---- Top: distribution shape. One conclusion = "where the mass sits". ----
     ax1.fill_between(n, pmf, color=theme.BLUE_FILL, alpha=0.55, linewidth=0)
-    ax1.plot(n, pmf, color=theme.BLUE, lw=1.6)
-    ax1.axvline(exp, color=theme.AMBER, ls="--", lw=1.6)
-    _annotate(ax1, exp, f"mean {exp:.0f}", theme.AMBER, ymax * 0.92)
+    ax1.plot(n, pmf, color=theme.BLUE, lw=1.8)
+    # Median is the actionable "typical" marker; mean is a faint reference only.
+    ax1.axvline(exp, color=theme.AMBER, ls="--", lw=1.2, alpha=0.55)
+    _tick_label(ax1, exp, "mean", theme.AMBER)
     if 0 <= p50 < len(pmf):
-        ax1.axvline(p50, color=theme.GREEN, ls=":", lw=1.6)
-        _annotate(ax1, p50, f"median {p50}", theme.GREEN, ymax * 0.78)
-    ax1.set_ylim(0, ymax * 1.18)
+        ax1.axvline(p50, color=theme.GREEN, ls=":", lw=1.8)
+        _tick_label(ax1, p50, "P50", theme.GREEN)
+    # Headline numbers live in one compact caption (single source, no line-label dup).
+    _stat_caption(ax1, [
+        (f"mean  {exp:.0f}", theme.AMBER),
+        (f"P50   {p50}", theme.GREEN),
+        (f"P90   {p90}", theme.RED),
+    ])
+    ax1.set_ylim(0, ymax * 1.22)
     ax1.set_ylabel("Probability per pull", color=theme.INK, fontsize=10)
     ax1.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=1))
+    ax1.grid(axis="y", color=theme.GRID, lw=0.8)
     _style_axes(ax1)
 
     full_title = title if not subtitle else f"{title}\n{subtitle}"
     ax1.set_title(full_title, color=theme.INK, fontsize=13, fontweight="bold",
-                  loc="left", pad=12)
+                  loc="left", pad=16)
 
-    ax2.fill_between(n, c, color=theme.BLUE_FILL, alpha=0.30, linewidth=0)
-    ax2.plot(n, c, color=theme.BLUE, lw=2.2)
+    # ---- Bottom: the decision panel. One conclusion = "is my budget enough?". ----
+    ax2.fill_between(n, c, color=theme.BLUE_FILL, alpha=0.28, linewidth=0)
+    ax2.plot(n, c, color=theme.BLUE, lw=2.4)
     for lvl in (0.5, 0.9):
-        ax2.axhline(lvl, color="#C5CCD6", ls=":", lw=1.0)
+        ax2.axhline(lvl, color="#D5DBE4", ls=":", lw=1.0)
     if 0 <= p90 < len(c):
-        ax2.axvline(p90, color=theme.RED, ls="--", lw=1.6)
-        _annotate(ax2, p90, f"P90 = {p90} (safety net)", theme.RED, 0.05)
+        ax2.axvline(p90, color=theme.RED, ls="--", lw=1.4, alpha=0.8)
+        _tick_label(ax2, p90, "P90 safety net", theme.RED)
     if budget is not None and budget >= 0:
         prob = metrics.prob_within(dist, budget)
-        ax2.axvline(budget, color=theme.PURPLE, ls="-.", lw=1.8)
         bx = min(budget, len(c) - 1)
-        ax2.plot([budget], [c[bx]], "o", color=theme.PURPLE, ms=7, zorder=5)
-        _annotate(ax2, budget, f"budget {budget} -> {prob:.0%}", theme.PURPLE, c[bx] + 0.04)
-    ax2.set_ylim(0, 1.02)
+        ax2.axvline(budget, color=theme.PURPLE, ls="-.", lw=1.8)
+        ax2.plot([budget], [c[bx]], "o", color=theme.PURPLE, ms=8, zorder=5)
+        # Offset the callout up-left so it never sits on top of the guide line.
+        ax2.annotate(
+            f"budget {budget} → {prob:.0%}", xy=(budget, c[bx]),
+            xytext=(-10, 18), textcoords="offset points",
+            color=theme.PURPLE, fontsize=9, fontweight="bold", ha="right", va="bottom",
+        )
+    ax2.set_ylim(0, 1.04)
     ax2.set_ylabel("Chance of success", color=theme.INK, fontsize=10)
     ax2.set_xlabel("Number of pulls", color=theme.INK, fontsize=10)
     ax2.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     ax2.set_xlim(0, len(pmf) - 1)
+    ax2.grid(axis="y", color=theme.GRID, lw=0.8)
     _style_axes(ax2)
 
     _add_watermark(fig)
@@ -169,10 +200,6 @@ def plot_comparison(rows, out_path: str = "out/compare.png",
                   fontsize=11, color=theme.INK, loc="left")
     ax1.set_ylabel("Expected pulls")
     ax1.set_ylim(0, max(exp) * 1.25 if exp else 1)
-    if shared_cny is not None:
-        ax1.text(0.99, 0.02, f"CNY @ ¥{shared_cny:.0f}/pull (shared)",
-                 transform=ax1.transAxes, ha="right", va="bottom",
-                 fontsize=8, color=theme.MUTED)
     _style_axes(ax1)
 
     bars2 = ax2.bar(labels, free, color=theme.GREEN_FILL, edgecolor=theme.GREEN, width=0.6)
@@ -186,8 +213,11 @@ def plot_comparison(rows, out_path: str = "out/compare.png",
     _style_axes(ax2)
 
     fig.suptitle(title, fontsize=13, fontweight="bold", color=theme.INK, x=0.02, ha="left")
+    if shared_cny is not None:
+        fig.text(0.02, 0.005, f"CNY @ ¥{shared_cny:.0f}/pull (shared across games)",
+                 fontsize=8, color=theme.MUTED, ha="left", va="bottom")
     _add_watermark(fig)
-    fig.tight_layout(rect=(0, 0.015, 1, 0.96))
+    fig.tight_layout(rect=(0, 0.03, 1, 0.96))
     fig.savefig(out_path, dpi=140)
     plt.close(fig)
     return out_path

@@ -60,6 +60,10 @@ gacha analyze --copies 1 --budget 90
 gacha analyze --copies 1 --budget 90 --plot out/up5.png
 ```
 
+![从零抽 1 个 UP 5★ 的概率分布与达成曲线](docs/images/distribution.png)
+
+上图一眼看懂：**上半**是每一抽出货概率（两个驼峰＝50/50 直接中 vs 歪了再保底），右上角给出 mean / P50 / P90 三个关键数；**下半**是「抽到第 N 抽为止的累计把握」，紫点标出你的预算落点，红线是 P90 安全垫。
+
 ---
 
 ## 进阶用法
@@ -108,12 +112,16 @@ gacha analyze --game hsr --banner standard --copies 1
 gacha analyze --game zzz --banner standard --copies 1
 ```
 
+![原神/星铁/绝区零 同口径比对：每个限定 5★ 的期望抽数与每月白嫖速率](docs/images/compare.png)
+
 ### 命座×精炼成本网格
 
 ```bash
 gacha grid --plot out/grid.png
 gacha grid --cells 00,01,21,65 --cells-dir out/pmfs/
 ```
+
+![命座×精炼成本网格热力图：颜色＝期望抽数，格内标注 抽数/人民币](docs/images/grid.png)
 
 ### 交互式 HTML 报告
 
@@ -188,7 +196,7 @@ engine               gg_adapter（封装 GGanalysis，主引擎）+ reference/mc
 ## 验证
 
 ```bash
-pytest    # 95 项：多游戏多卡池与 GGanalysis 一致性 + MC 交叉校验 + 边界 + 卷积/UIGF/history/compare/grid/report
+pytest    # 97 项：多游戏多卡池与 GGanalysis 一致性 + MC 交叉校验 + 边界 + 卷积/UIGF/history/compare/grid/report
 ```
 
 关键校验：自研 MC 与 GGanalysis 期望相对误差 < 0.5%；1 个 UP 5★ 期望 ≈ 93.45 抽；单 5★ ≈ 62.3 抽；硬保底 180 抽内必达成。

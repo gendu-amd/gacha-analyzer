@@ -146,3 +146,4 @@
 | D59 | 2026-06-27 | **VIZ_DESIGN.md**：可视化规范文档，与 STREAMLIT_DESIGN 配色对齐 | 单一设计事实来源 |
 | D60 | 2026-06-27 | **matplotlib CJK 探测**：theme 运行时尝试 Noto/WenQuanYi，无则保持英文主标签 | 渐进式中文化（CR-6 续） |
 | D61 | 2026-06-29 | **复审收敛（续 D57）**：`viz/figdata.py` 收敛 PNG/HTML 取数；`viz/text_width.py` 改用标准 `wcwidth`；`grid` 导出参数由 `--plot-cells`/`--plot-all-cells`/`--export-pmf-dir` 合并为 `--cells all\|<list>` + `--cells-dir` | 去重复 / 去重造轮子 / 收敛过载 CLI |
+| D62 | 2026-06-29 | **静态图去杂讯（一图一结论）**：`plot_pmf_cdf` 标题瘦身、关键数收进右上角 caption（单一来源）、竖线只留短标签、预算标注偏移避免压线；compare 的 ¥/抽注脚移出柱区。README 嵌入 `docs/images/` 三张示例图 | UI 美化 + 文档可视化 |
