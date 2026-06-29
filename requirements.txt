@@ -5,4 +5,5 @@ numpy==2.4.6
 # scipy 由 GGanalysis 作为传递依赖自动安装（本项目代码零直接调用），不在此直接声明。
 matplotlib==3.11.0
 plotly==6.8.0
+wcwidth==0.2.13
 pytest==9.1.1

@@ -1,19 +1,21 @@
-"""终端表格列宽：正确处理 CJK 等 East Asian 双宽字符（D25）。"""
+"""终端表格列宽：用标准 ``wcwidth`` 库计算显示宽度（D25）。
+
+不再手写 ``unicodedata.east_asian_width`` 逐字符判定——``wcwidth`` 是 POSIX
+``wcwidth(3)`` 的成熟移植，除 CJK 全角外还正确处理零宽/组合字符与控制符。
+"""
 
 from __future__ import annotations
 
-import unicodedata
+from wcwidth import wcswidth, wcwidth as _wcwidth
 
 
 def display_width(text: str) -> int:
-    """字符串在等宽终端中的显示宽度（CJK 全角字符计 2）。"""
-    w = 0
-    for ch in text:
-        if unicodedata.east_asian_width(ch) in ("F", "W"):
-            w += 2
-        else:
-            w += 1
-    return w
+    """字符串在等宽终端中的显示宽度（CJK 全角字符计 2，零宽字符计 0）。"""
+    w = wcswidth(text)
+    if w >= 0:
+        return w
+    # wcswidth 遇到控制字符会返回 -1；按字符累加并把不可打印字符当作 0 宽。
+    return sum(max(_wcwidth(ch), 0) for ch in text)
 
 
 def ljust_display(text: str, width: int) -> str:

@@ -145,3 +145,4 @@
 | D58 | 2026-06-27 | **HTML 报告样式升级**：header 分隔、指标卡 grid hover、表格斑马纹；`--grid-cells` 嵌入单元格 PMF 锚点 | 报告可读性 |
 | D59 | 2026-06-27 | **VIZ_DESIGN.md**：可视化规范文档，与 STREAMLIT_DESIGN 配色对齐 | 单一设计事实来源 |
 | D60 | 2026-06-27 | **matplotlib CJK 探测**：theme 运行时尝试 Noto/WenQuanYi，无则保持英文主标签 | 渐进式中文化（CR-6 续） |
+| D61 | 2026-06-29 | **复审收敛（续 D57）**：`viz/figdata.py` 收敛 PNG/HTML 取数；`viz/text_width.py` 改用标准 `wcwidth`；`grid` 导出参数由 `--plot-cells`/`--plot-all-cells`/`--export-pmf-dir` 合并为 `--cells all\|<list>` + `--cells-dir` | 去重复 / 去重造轮子 / 收敛过载 CLI |

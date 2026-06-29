@@ -5,7 +5,8 @@ import warnings
 import pytest
 
 from gacha.analysis import compare, metrics
-from gacha.analysis.compare import CombineComparisonRow
+from gacha.analysis.compare import COMPARE_CAVEAT, CombineComparisonRow
+from gacha.engine.base import BANNER_CHARACTER
 from gacha.engine.gg_adapter import GGanalysisSolver
 from gacha.games.registry import get_game
 
@@ -53,3 +54,19 @@ def test_compare_combine_warns():
         warnings.simplefilter("always")
         compare.compare_combine_games(SOLVER, char_copies=1, weap_copies=1)
     assert any("仅供参考" in str(x.message) for x in w)
+
+
+def test_compare_warns_and_carries_caveat():
+    with pytest.warns(UserWarning, match="仅供参考"):
+        rows = compare.compare_games(SOLVER, ["genshin", "hsr"], banner=BANNER_CHARACTER)
+    assert len(rows) == 2
+    assert all(r.caveat == COMPARE_CAVEAT for r in rows)
+
+
+def test_compare_shared_cny_collapses_column():
+    rows = compare.compare_games(SOLVER, ["genshin", "hsr", "zzz"], banner="character")
+    assert compare.shared_money_per_pull_cny(rows) == pytest.approx(16.0)
+    from gacha.viz.tables import format_compare_table
+    txt = format_compare_table(rows)
+    assert "折人民币统一按 ¥16/抽" in txt
+    assert "¥1495" not in txt  # 不应逐行重复大额人民币

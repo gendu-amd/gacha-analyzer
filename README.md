@@ -112,7 +112,7 @@ gacha analyze --game zzz --banner standard --copies 1
 
 ```bash
 gacha grid --plot out/grid.png
-gacha grid --plot-cells 00,01,21,65 --export-pmf-dir out/pmfs/
+gacha grid --cells 00,01,21,65 --cells-dir out/pmfs/
 ```
 
 ### 交互式 HTML 报告

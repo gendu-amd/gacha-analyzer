@@ -262,18 +262,15 @@ def _cmd_grid(args) -> int:
     print(format_grid_table(g))
 
     cells: list[str] = []
-    if args.plot_all_cells:
-        cells = grid_mod.all_cell_codes(args.max_const, args.max_refine)
-    elif args.plot_cells:
-        cells = [c.strip() for c in args.plot_cells.split(",") if c.strip()]
-
-    export_dir = args.export_pmf_dir
-    if export_dir and not cells:
-        cells = grid_mod.all_cell_codes(args.max_const, args.max_refine)
+    if args.cells:
+        if args.cells.strip().lower() == "all":
+            cells = grid_mod.all_cell_codes(args.max_const, args.max_refine)
+        else:
+            cells = [c.strip() for c in args.cells.split(",") if c.strip()]
 
     if cells:
         from gacha.viz.plots import plot_pmf_cdf
-        out_dir = export_dir or "out/pmfs"
+        out_dir = args.cells_dir
         os.makedirs(out_dir, exist_ok=True)
         saved = []
         for code in cells:
@@ -388,12 +385,10 @@ def build_parser() -> argparse.ArgumentParser:
     gr.add_argument("--weap-pity", type=int, default=0)
     gr.add_argument("--weap-guaranteed", action="store_true")
     gr.add_argument("--plot", default=None, help="导出网格热力图 PNG")
-    gr.add_argument("--plot-cells", default=None,
-                    help="导出指定单元格 PMF/CDF，逗号分隔如 00,01,21,65")
-    gr.add_argument("--plot-all-cells", action="store_true",
-                    help="导出全部单元格 PMF/CDF")
-    gr.add_argument("--export-pmf-dir", default=None,
-                    help="PMF/CDF 导出目录（默认 out/pmfs/）")
+    gr.add_argument("--cells", default=None,
+                    help="导出单元格 PMF/CDF：'all' 表示全部，或逗号分隔如 00,01,21,65")
+    gr.add_argument("--cells-dir", default="out/pmfs",
+                    help="单元格 PMF/CDF 导出目录（默认 out/pmfs/）")
     gr.set_defaults(func=_cmd_grid)
 
     rp = sub.add_parser("report", help="生成交互式 HTML 报告（指标+分布+网格+跨游戏比对）")
